@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isMember(calendarId) {
+      return isSignedIn() &&
+        request.auth.uid in get(/databases/$(database)/documents/calendars/$(calendarId)).data.memberIds;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /calendars/{calendarId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.memberIds;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.ownerId;
+      // メンバー追加（招待コード参加）は誰でもサインインしていれば可能。それ以外の更新はメンバーのみ。
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.ownerId;
+
+      match /events/{eventId} {
+        allow read, write: if isMember(calendarId);
+      }
+    }
+  }
+}

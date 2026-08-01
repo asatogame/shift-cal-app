@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "シフトカレンダー共有",
+    "slug": "shift-cal-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "shiftcal",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "jp.jackcentral.shiftcal",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "予定表を撮影してカレンダーに自動登録するためにカメラを使用します。",
+        "NSPhotoLibraryUsageDescription": "予定表の画像を選択してカレンダーに自動登録するために写真ライブラリを使用します。"
+      }
+    },
+    "android": {
+      "package": "jp.jackcentral.shiftcal",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-apple-authentication",
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "予定表の画像を選択するために写真ライブラリへのアクセスを許可してください。",
+          "cameraPermission": "予定表を撮影するためにカメラへのアクセスを許可してください。"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2a90a8cd-40b2-457e-9f8b-7e1c0e0fadd1"
+      }
+    },
+    "owner": "zarwk"
+  }
+}
