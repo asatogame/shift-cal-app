@@ -26,7 +26,12 @@ export default function CalendarListScreen({ navigation }) {
 
   useEffect(() => {
     if (!user) return;
-    const unsub = subscribeMyCalendars(user.uid, setCalendars);
+    const unsub = subscribeMyCalendars(user.uid, setCalendars, (error) => {
+      Alert.alert(
+        "読み込みエラー",
+        "カレンダーの取得に失敗しました。\nFirestoreのセキュリティルールが正しく設定されているか確認してください。"
+      );
+    });
     return unsub;
   }, [user]);
 

@@ -36,6 +36,50 @@ const SYSTEM_PROMPT = `あなたは予定表の画像から予定を抽出する
 - 読み取れない・曖昧な項目は memo に「要確認」等と記載してください。
 - 予定が1件も読み取れない場合は空配列 [] を返してください。`;
 
+// 招待コードでカレンダーに参加（セキュリティルールをバイパスして検索・参加）
+exports.joinByInviteCode = onCall(
+  { region: "asia-northeast1" },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "ログインが必要です");
+    }
+
+    const { inviteCode } = request.data || {};
+    if (!inviteCode || typeof inviteCode !== "string") {
+      throw new HttpsError("invalid-argument", "招待コードが必要です");
+    }
+
+    const uid = request.auth.uid;
+    const firestore = admin.firestore();
+
+    // 招待コードでカレンダーを検索（admin SDKなのでルールを回避）
+    const snap = await firestore
+      .collection("calendars")
+      .where("inviteCode", "==", inviteCode.toUpperCase())
+      .limit(1)
+      .get();
+
+    if (snap.empty) {
+      throw new HttpsError("not-found", "招待コードが見つかりませんでした");
+    }
+
+    const calDoc = snap.docs[0];
+    const data = calDoc.data();
+
+    // 既にメンバーかチェック
+    if (data.memberIds && data.memberIds.includes(uid)) {
+      return { calendarId: calDoc.id, alreadyMember: true };
+    }
+
+    // メンバーに追加
+    await calDoc.ref.update({
+      memberIds: admin.firestore.FieldValue.arrayUnion(uid),
+    });
+
+    return { calendarId: calDoc.id, alreadyMember: false };
+  }
+);
+
 exports.analyzeSchedulePhoto = onCall(
   { secrets: [ANTHROPIC_API_KEY], region: "asia-northeast1", memory: "512MiB" },
   async (request) => {

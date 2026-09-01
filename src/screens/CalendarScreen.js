@@ -6,6 +6,7 @@ import {
   StyleSheet,
   FlatList,
   SafeAreaView,
+  Alert,
 } from "react-native";
 import { format, addMonths, subMonths } from "date-fns";
 import MonthGrid from "../components/MonthGrid";
@@ -25,7 +26,12 @@ export default function CalendarScreen({ route, navigation }) {
   }, [calendarId]);
 
   useEffect(() => {
-    const unsub = subscribeEvents(calendarId, setEvents);
+    const unsub = subscribeEvents(calendarId, setEvents, (error) => {
+      Alert.alert(
+        "読み込みエラー",
+        "予定の取得に失敗しました。\nこのカレンダーへのアクセス権を確認してください。"
+      );
+    });
     return unsub;
   }, [calendarId]);
 

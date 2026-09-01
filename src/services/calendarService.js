@@ -34,7 +34,8 @@ import {
   serverTimestamp,
   arrayUnion,
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "../firebase";
 
 function randomInviteCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 紛らわしい文字を除外
@@ -46,12 +47,19 @@ function randomInviteCode() {
 }
 
 // 自分が参加しているカレンダー一覧をリアルタイム購読
-export function subscribeMyCalendars(uid, callback) {
+export function subscribeMyCalendars(uid, callback, onError) {
   const q = query(collection(db, "calendars"), where("memberIds", "array-contains", uid));
-  return onSnapshot(q, (snap) => {
-    const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    callback(list);
-  });
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      callback(list);
+    },
+    (error) => {
+      console.error("subscribeMyCalendars error:", error.message);
+      if (onError) onError(error);
+    }
+  );
 }
 
 // 新しいカレンダーを作成
@@ -66,27 +74,27 @@ export async function createCalendar(uid, name) {
   return ref.id;
 }
 
-// 招待コードでカレンダーに参加
+// 招待コードでカレンダーに参加（Cloud Function経由でセキュリティルールを回避）
 export async function joinCalendarByCode(uid, inviteCode) {
-  const q = query(collection(db, "calendars"), where("inviteCode", "==", inviteCode.toUpperCase()));
-  const snap = await getDocs(q);
-  if (snap.empty) {
-    throw new Error("招待コードが見つかりませんでした");
-  }
-  const calDoc = snap.docs[0];
-  await updateDoc(doc(db, "calendars", calDoc.id), {
-    memberIds: arrayUnion(uid),
-  });
-  return calDoc.id;
+  const joinFn = httpsCallable(functions, "joinByInviteCode");
+  const result = await joinFn({ inviteCode });
+  return result.data.calendarId;
 }
 
 // カレンダー内の予定をリアルタイム購読
-export function subscribeEvents(calendarId, callback) {
+export function subscribeEvents(calendarId, callback, onError) {
   const q = collection(db, "calendars", calendarId, "events");
-  return onSnapshot(q, (snap) => {
-    const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    callback(list);
-  });
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      callback(list);
+    },
+    (error) => {
+      console.error("subscribeEvents error:", error.message);
+      if (onError) onError(error);
+    }
+  );
 }
 
 // 予定を1件追加
