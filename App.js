@@ -12,6 +12,7 @@ import EventFormScreen from "./src/screens/EventFormScreen";
 import PhotoImportScreen from "./src/screens/PhotoImportScreen";
 import ShareScreen from "./src/screens/ShareScreen";
 import ShiftQuickAddScreen from "./src/screens/ShiftQuickAddScreen";
+import SettingsScreen from "./src/screens/SettingsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -53,6 +54,11 @@ function RootNavigator() {
         name="ShiftQuickAdd"
         component={ShiftQuickAddScreen}
         options={{ title: "シフト一括登録" }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ title: "設定" }}
       />
     </Stack.Navigator>
   );

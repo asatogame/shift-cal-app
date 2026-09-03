@@ -16,7 +16,7 @@ import UpgradeAccountModal from "../components/UpgradeAccountModal";
 const CAL_COLORS = ["#3A50E0", "#16A34A", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
 export default function CalendarListScreen({ navigation }) {
-  const { user, isGuest, logout } = useAuth();
+  const { user, isGuest } = useAuth();
   const [calendars, setCalendars] = useState([]);
   const [modalMode, setModalMode] = useState(null);
   const [inputValue, setInputValue] = useState("");
@@ -86,15 +86,20 @@ export default function CalendarListScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>マイカレンダー</Text>
-        {isGuest() ? (
-          <Pressable style={styles.registerBtn} onPress={() => setShowUpgrade(true)}>
-            <Text style={styles.registerBtnText}>アカウント登録</Text>
+        <View style={styles.headerRight}>
+          {isGuest() && (
+            <Pressable style={styles.registerBtn} onPress={() => setShowUpgrade(true)}>
+              <Text style={styles.registerBtnText}>アカウント登録</Text>
+            </Pressable>
+          )}
+          <Pressable
+            style={styles.settingsBtn}
+            onPress={() => navigation.navigate("Settings")}
+            hitSlop={8}
+          >
+            <Text style={styles.settingsIcon}>⚙️</Text>
           </Pressable>
-        ) : (
-          <Pressable onPress={logout}>
-            <Text style={styles.logoutText}>ログアウト</Text>
-          </Pressable>
-        )}
+        </View>
       </View>
 
       <FlatList
@@ -207,7 +212,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   registerBtnText: { color: "#3A50E0", fontSize: 13, fontWeight: "600" },
-  logoutText: { color: "#9CA3AF", fontSize: 13 },
+  headerRight: { flexDirection: "row", alignItems: "center", gap: 10 },
+  settingsBtn: { padding: 4 },
+  settingsIcon: { fontSize: 20 },
   list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16 },
   emptyBox: {
     alignItems: "center",

@@ -1,123 +1,122 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Alert, Linking } from "react-native";
+import React from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Alert,
+  Linking,
+  ScrollView,
+} from "react-native";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
-import { getAnalysisUsage } from "../services/claudeVision";
 import { app } from "../firebase";
-
-const THEME_OPTIONS = [
-  { key: "system", label: "端末に合わせる" },
-  { key: "light", label: "ライト" },
-  { key: "dark", label: "ダーク" },
-];
+import UpgradeAccountModal from "../components/UpgradeAccountModal";
 
 export default function SettingsScreen({ navigation }) {
-  const { colors, setting, setTheme, isDark } = useTheme();
   const { user, isGuest, logout } = useAuth();
-  const [usage, setUsage] = useState(null);
-
-  useEffect(() => {
-    getAnalysisUsage().then(setUsage).catch(() => {});
-  }, []);
+  const [showUpgrade, setShowUpgrade] = React.useState(false);
 
   const displayName = user?.displayName || (isGuest() ? "ゲスト" : user?.email || "");
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <View style={[styles.avatar, { backgroundColor: colors.primaryBg }]}>
-          <Text style={[styles.avatarText, { color: colors.primary }]}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.profileCard}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>
             {(displayName || "?")[0]}
           </Text>
         </View>
         <View style={styles.profileInfo}>
-          <Text style={[styles.profileName, { color: colors.text }]}>{displayName}</Text>
-          <Text style={[styles.profileEmail, { color: colors.textMuted }]}>
+          <Text style={styles.profileName}>{displayName}</Text>
+          <Text style={styles.profileEmail}>
             {isGuest() ? "匿名ユーザー" : user?.email || ""}
           </Text>
         </View>
       </View>
 
-      <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>プラン</Text>
-      <Pressable
-        style={[styles.premiumCard, { backgroundColor: usage?.isSubscriber ? colors.surface : colors.primary, borderColor: colors.border, borderWidth: usage?.isSubscriber ? 1 : 0 }]}
-        onPress={() => navigation.navigate("Premium")}
-      >
-        {usage?.isSubscriber ? (
-          <>
-            <Text style={[styles.premiumTitle, { color: colors.primary }]}>✨ プレミアム会員</Text>
-            <Text style={[styles.premiumDesc, { color: colors.textSec }]}>
-              AI解析 残り{usage.remaining}/10回（今月）{usage.bonus > 0 ? ` + ${usage.bonus}回` : ""}
-            </Text>
-          </>
-        ) : (
-          <>
-            <Text style={[styles.premiumTitle, { color: "#fff" }]}>✨ プレミアムプランに登録</Text>
-            <Text style={[styles.premiumDesc, { color: "rgba(255,255,255,0.8)" }]}>
-              広告非表示 + AI解析 月10回 — ¥300/月
-            </Text>
-          </>
-        )}
-      </Pressable>
+      {isGuest() && (
+        <>
+          <Text style={styles.sectionLabel}>アカウント登録</Text>
+          <View style={styles.section}>
+            <Pressable
+              style={styles.row}
+              onPress={() => setShowUpgrade(true)}
+            >
+              <Text style={[styles.rowText, { color: "#3A50E0" }]}>
+                ログイン / アカウント登録
+              </Text>
+              <Text style={styles.rowArrow}>›</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.hintText}>
+            カレンダーを共有するにはアカウント登録が必要です
+          </Text>
+        </>
+      )}
 
-      <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>テーマ</Text>
-      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        {THEME_OPTIONS.map((opt, i) => (
-          <Pressable
-            key={opt.key}
-            style={[
-              styles.row,
-              i < THEME_OPTIONS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-            ]}
-            onPress={() => setTheme(opt.key)}
-          >
-            <Text style={[styles.rowText, { color: colors.text }]}>{opt.label}</Text>
-            {setting === opt.key && (
-              <Text style={[styles.check, { color: colors.primary }]}>✓</Text>
-            )}
-          </Pressable>
-        ))}
-      </View>
-
-      <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>サポート</Text>
-      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Text style={styles.sectionLabel}>サポート</Text>
+      <View style={styles.section}>
         <Pressable
-          style={[styles.row, { borderBottomWidth: 1, borderBottomColor: colors.border }]}
-          onPress={() => Linking.openURL("mailto:info@jack-central.com?subject=" + encodeURIComponent("【シフトカレンダー共有】お問い合わせ"))}
+          style={[styles.row, styles.rowBorder]}
+          onPress={() =>
+            Linking.openURL(
+              "mailto:info@jack-central.com?subject=" +
+                encodeURIComponent("【シフトカレンダー共有】お問い合わせ")
+            )
+          }
         >
-          <Text style={[styles.rowText, { color: colors.text }]}>お問い合わせ</Text>
-          <Text style={[styles.rowSub, { color: colors.textMuted }]}>メールで連絡</Text>
+          <Text style={styles.rowText}>お問い合わせ</Text>
+          <Text style={styles.rowSub}>メールで連絡</Text>
         </Pressable>
         <Pressable
           style={styles.row}
-          onPress={() => Linking.openURL("mailto:info@jack-central.com?subject=" + encodeURIComponent("【シフトカレンダー共有】不具合報告") + "&body=" + encodeURIComponent("■ 発生した問題\n\n\n■ 再現手順\n\n\n■ 端末情報\n"))}
+          onPress={() =>
+            Linking.openURL(
+              "mailto:info@jack-central.com?subject=" +
+                encodeURIComponent("【シフトカレンダー共有】不具合報告") +
+                "&body=" +
+                encodeURIComponent(
+                  "■ 発生した問題\n\n\n■ 再現手順\n\n\n■ 端末情報\n"
+                )
+            )
+          }
         >
-          <Text style={[styles.rowText, { color: colors.text }]}>不具合を報告</Text>
-          <Text style={[styles.rowSub, { color: colors.textMuted }]}>バグ報告</Text>
+          <Text style={styles.rowText}>不具合を報告</Text>
+          <Text style={styles.rowSub}>バグ報告</Text>
         </Pressable>
       </View>
 
-      <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>法的情報</Text>
-      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Text style={styles.sectionLabel}>法的情報</Text>
+      <View style={styles.section}>
         <Pressable
-          style={[styles.row, { borderBottomWidth: 1, borderBottomColor: colors.border }]}
-          onPress={() => Linking.openURL("https://asatogame.github.io/shift-cal-app/privacy.html")}
+          style={[styles.row, styles.rowBorder]}
+          onPress={() =>
+            Linking.openURL(
+              "https://asatogame.github.io/shift-cal-app/privacy.html"
+            )
+          }
         >
-          <Text style={[styles.rowText, { color: colors.text }]}>プライバシーポリシー</Text>
+          <Text style={styles.rowText}>プライバシーポリシー</Text>
+          <Text style={styles.rowArrow}>›</Text>
         </Pressable>
         <Pressable
           style={styles.row}
-          onPress={() => Linking.openURL("https://asatogame.github.io/shift-cal-app/terms.html")}
+          onPress={() =>
+            Linking.openURL(
+              "https://asatogame.github.io/shift-cal-app/terms.html"
+            )
+          }
         >
-          <Text style={[styles.rowText, { color: colors.text }]}>利用規約</Text>
+          <Text style={styles.rowText}>利用規約</Text>
+          <Text style={styles.rowArrow}>›</Text>
         </Pressable>
       </View>
 
-      <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>アカウント</Text>
-      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Text style={styles.sectionLabel}>アカウント</Text>
+      <View style={styles.section}>
         <Pressable
-          style={[styles.row, { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+          style={[styles.row, styles.rowBorder]}
           onPress={() => {
             Alert.alert("ログアウト", "ログアウトしますか？", [
               { text: "キャンセル", style: "cancel" },
@@ -125,7 +124,7 @@ export default function SettingsScreen({ navigation }) {
             ]);
           }}
         >
-          <Text style={[styles.rowText, { color: colors.danger }]}>ログアウト</Text>
+          <Text style={[styles.rowText, { color: "#EF4444" }]}>ログアウト</Text>
         </Pressable>
         <Pressable
           style={styles.row}
@@ -141,7 +140,10 @@ export default function SettingsScreen({ navigation }) {
                   onPress: async () => {
                     try {
                       const functions = getFunctions(app, "asia-northeast1");
-                      const deleteAccount = httpsCallable(functions, "deleteAccount");
+                      const deleteAccount = httpsCallable(
+                        functions,
+                        "deleteAccount"
+                      );
                       await deleteAccount();
                       Alert.alert("削除完了", "アカウントが削除されました。");
                     } catch (e) {
@@ -153,51 +155,64 @@ export default function SettingsScreen({ navigation }) {
             );
           }}
         >
-          <Text style={[styles.rowText, { color: colors.danger }]}>アカウントを削除</Text>
+          <Text style={[styles.rowText, { color: "#EF4444" }]}>
+            アカウントを削除
+          </Text>
         </Pressable>
       </View>
 
-      <Text style={[styles.version, { color: colors.textMuted }]}>
-        シフトカレンダー共有 v1.0.0
-      </Text>
-    </View>
+      <Text style={styles.version}>シフトカレンダー共有 v1.0.0</Text>
+
+      <UpgradeAccountModal
+        visible={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        onSuccess={() => {}}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1, backgroundColor: "#FAFBFC" },
+  content: { padding: 16, paddingBottom: 40 },
   profileCard: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 18,
     marginBottom: 24,
     borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   avatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
+    backgroundColor: "#EEF2FF",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
   },
-  avatarText: { fontSize: 22, fontWeight: "700" },
+  avatarText: { fontSize: 22, fontWeight: "700", color: "#3A50E0" },
   profileInfo: { flex: 1 },
-  profileName: { fontSize: 18, fontWeight: "700", marginBottom: 4 },
-  profileEmail: { fontSize: 13 },
+  profileName: { fontSize: 18, fontWeight: "700", color: "#1F2937", marginBottom: 4 },
+  profileEmail: { fontSize: 13, color: "#9CA3AF" },
   sectionLabel: {
     fontSize: 12,
     fontWeight: "600",
+    color: "#9CA3AF",
     marginBottom: 8,
     marginLeft: 4,
     textTransform: "uppercase",
   },
   section: {
+    backgroundColor: "#fff",
     borderRadius: 14,
     overflow: "hidden",
     marginBottom: 24,
     borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   row: {
     flexDirection: "row",
@@ -206,11 +221,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  rowText: { fontSize: 15 },
-  check: { fontSize: 16, fontWeight: "700" },
-  rowSub: { fontSize: 13 },
-  premiumCard: { borderRadius: 16, padding: 18, marginBottom: 24, alignItems: "center" },
-  premiumTitle: { fontSize: 16, fontWeight: "800", marginBottom: 4 },
-  premiumDesc: { fontSize: 13 },
-  version: { textAlign: "center", fontSize: 12, marginTop: 16 },
+  rowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  rowText: { fontSize: 15, color: "#1F2937" },
+  rowSub: { fontSize: 13, color: "#9CA3AF" },
+  rowArrow: { fontSize: 18, color: "#D1D5DB" },
+  hintText: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginTop: -16,
+    marginBottom: 24,
+    marginLeft: 4,
+  },
+  version: {
+    textAlign: "center",
+    fontSize: 12,
+    color: "#D1D5DB",
+    marginTop: 8,
+  },
 });
