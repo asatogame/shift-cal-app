@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { subscribeMyCalendars } from "../services/calendarService";
 
 export default function ShiftTabScreen({ navigation }) {
   const { user } = useAuth();
+  const { colors } = useTheme();
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarId, setSelectedCalendarId] = useState(null);
 
@@ -18,8 +20,6 @@ export default function ShiftTabScreen({ navigation }) {
     });
     return unsub;
   }, [user]);
-
-  const selectedCalendar = calendars.find((c) => c.id === selectedCalendarId);
 
   const menuItems = [
     {
@@ -46,18 +46,16 @@ export default function ShiftTabScreen({ navigation }) {
       icon: "🎨",
       title: "シフトパターン管理",
       desc: "パターンの追加・編集・並べ替え",
-      onPress: () => {
-        // ShiftPatternScreen が将来追加されたらここでnavigate
-      },
+      onPress: () => {},
     },
   ];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.calendarSelector}>
-        <Text style={styles.calendarSelectorLabel}>対象カレンダー</Text>
+    <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} contentContainerStyle={styles.content}>
+      <View style={[styles.calendarSelector, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.calendarSelectorLabel, { color: colors.textMuted }]}>対象カレンダー</Text>
         {calendars.length === 0 ? (
-          <Text style={styles.noCalendarText}>
+          <Text style={[styles.noCalendarText, { color: colors.textSecondary }]}>
             カレンダーがありません。「カレンダー」タブから作成してください。
           </Text>
         ) : (
@@ -67,14 +65,16 @@ export default function ShiftTabScreen({ navigation }) {
                 key={cal.id}
                 style={[
                   styles.calendarChip,
-                  selectedCalendarId === cal.id && styles.calendarChipSelected,
+                  { backgroundColor: colors.surfaceAlt },
+                  selectedCalendarId === cal.id && { backgroundColor: colors.accent },
                 ]}
                 onPress={() => setSelectedCalendarId(cal.id)}
               >
                 <Text
                   style={[
                     styles.calendarChipText,
-                    selectedCalendarId === cal.id && styles.calendarChipTextSelected,
+                    { color: colors.textMuted },
+                    selectedCalendarId === cal.id && { color: "#fff" },
                   ]}
                 >
                   {cal.name}
@@ -88,16 +88,20 @@ export default function ShiftTabScreen({ navigation }) {
       {menuItems.map((item, i) => (
         <Pressable
           key={i}
-          style={[styles.menuCard, !selectedCalendarId && { opacity: 0.4 }]}
+          style={[
+            styles.menuCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            !selectedCalendarId && { opacity: 0.4 },
+          ]}
           onPress={item.onPress}
           disabled={!selectedCalendarId}
         >
           <Text style={styles.menuIcon}>{item.icon}</Text>
           <View style={styles.menuTextBox}>
-            <Text style={styles.menuTitle}>{item.title}</Text>
-            <Text style={styles.menuDesc}>{item.desc}</Text>
+            <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
+            <Text style={[styles.menuDesc, { color: colors.textSecondary }]}>{item.desc}</Text>
           </View>
-          <Text style={styles.menuArrow}>›</Text>
+          <Text style={[styles.menuArrow, { color: colors.textVeryMuted }]}>›</Text>
         </Pressable>
       ))}
     </ScrollView>
@@ -105,42 +109,35 @@ export default function ShiftTabScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0D0D0F" },
+  container: { flex: 1 },
   content: { padding: 16, paddingTop: 8 },
   calendarSelector: {
-    backgroundColor: "#1A1A1E",
     borderRadius: 14,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#2A2A2E",
   },
-  calendarSelectorLabel: { fontSize: 12, color: "#8A8F98", marginBottom: 10 },
-  noCalendarText: { fontSize: 13, color: "#6B7280", lineHeight: 20 },
+  calendarSelectorLabel: { fontSize: 12, marginBottom: 10 },
+  noCalendarText: { fontSize: 13, lineHeight: 20 },
   calendarChips: { flexDirection: "row" },
   calendarChip: {
-    backgroundColor: "#2A2A2E",
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 8,
     marginRight: 8,
   },
-  calendarChipSelected: { backgroundColor: "#3A50E0" },
-  calendarChipText: { fontSize: 14, color: "#9CA3AF", fontWeight: "600" },
-  calendarChipTextSelected: { color: "#fff" },
+  calendarChipText: { fontSize: 14, fontWeight: "600" },
   menuCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1A1A1E",
     borderRadius: 14,
     padding: 18,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#2A2A2E",
   },
   menuIcon: { fontSize: 28, marginRight: 14 },
   menuTextBox: { flex: 1 },
-  menuTitle: { fontSize: 16, fontWeight: "700", color: "#F3F4F6", marginBottom: 4 },
-  menuDesc: { fontSize: 12, color: "#6B7280" },
-  menuArrow: { fontSize: 20, color: "#4B5563" },
+  menuTitle: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
+  menuDesc: { fontSize: 12 },
+  menuArrow: { fontSize: 20 },
 });

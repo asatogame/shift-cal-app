@@ -12,10 +12,13 @@ import {
   isToday,
   getDay,
 } from "date-fns";
+import { useTheme } from "../context/ThemeContext";
 
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
 export default function MonthGrid({ month, selectedDate, onSelectDate, eventDates, eventsByDate }) {
+  const { colors } = useTheme();
+
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(month), { weekStartsOn: 0 });
     const end = endOfWeek(endOfMonth(month), { weekStartsOn: 0 });
@@ -23,15 +26,16 @@ export default function MonthGrid({ month, selectedDate, onSelectDate, eventDate
   }, [month]);
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { backgroundColor: colors.bg }]}>
       <View style={styles.weekRow}>
         {WEEKDAY_LABELS.map((label, i) => (
           <Text
             key={label}
             style={[
               styles.weekdayLabel,
-              i === 0 && styles.sunday,
-              i === 6 && styles.saturday,
+              { color: colors.weekday },
+              i === 0 && { color: colors.sunday },
+              i === 6 && { color: colors.saturday },
             ]}
           >
             {label}
@@ -46,7 +50,7 @@ export default function MonthGrid({ month, selectedDate, onSelectDate, eventDate
           const today = isToday(day);
           const dayOfWeek = getDay(day);
           const dayEvents = eventsByDate ? eventsByDate[key] || [] : [];
-          const colors = [...new Set(dayEvents.map((e) => e.color || "#3A50E0"))].slice(0, 3);
+          const eventColors = [...new Set(dayEvents.map((e) => e.color || "#3A50E0"))].slice(0, 3);
 
           return (
             <Pressable
@@ -62,18 +66,19 @@ export default function MonthGrid({ month, selectedDate, onSelectDate, eventDate
                 <Text
                   style={[
                     styles.dayText,
-                    !inMonth && styles.dayTextMuted,
+                    { color: colors.dayText },
+                    !inMonth && { color: colors.dayTextMuted },
                     selected && styles.dayTextSelected,
-                    today && !selected && styles.dayTextToday,
-                    !selected && !today && inMonth && dayOfWeek === 0 && styles.daySunday,
-                    !selected && !today && inMonth && dayOfWeek === 6 && styles.daySaturday,
+                    today && !selected && { color: colors.dayToday, fontWeight: "700" },
+                    !selected && !today && inMonth && dayOfWeek === 0 && { color: colors.sunday },
+                    !selected && !today && inMonth && dayOfWeek === 6 && { color: colors.saturday },
                   ]}
                 >
                   {format(day, "d")}
                 </Text>
               </View>
               <View style={styles.dotRow}>
-                {colors.map((c, i) => (
+                {eventColors.map((c, i) => (
                   <View key={i} style={[styles.dot, { backgroundColor: c }]} />
                 ))}
               </View>
@@ -87,7 +92,6 @@ export default function MonthGrid({ month, selectedDate, onSelectDate, eventDate
 
 const styles = StyleSheet.create({
   wrapper: {
-    backgroundColor: "#fff",
     paddingHorizontal: 4,
     paddingBottom: 6,
   },
@@ -100,11 +104,8 @@ const styles = StyleSheet.create({
     width: `${100 / 7}%`,
     textAlign: "center",
     fontSize: 11,
-    color: "#9CA3AF",
     fontWeight: "600",
   },
-  sunday: { color: "#EF4444" },
-  saturday: { color: "#3B82F6" },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -132,22 +133,12 @@ const styles = StyleSheet.create({
   },
   dayText: {
     fontSize: 14,
-    color: "#374151",
     fontWeight: "500",
-  },
-  dayTextMuted: {
-    color: "#D1D5DB",
   },
   dayTextSelected: {
     color: "#fff",
     fontWeight: "700",
   },
-  dayTextToday: {
-    color: "#3A50E0",
-    fontWeight: "700",
-  },
-  daySunday: { color: "#EF4444" },
-  daySaturday: { color: "#3B82F6" },
   dotRow: {
     flexDirection: "row",
     height: 6,

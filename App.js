@@ -7,6 +7,7 @@ import { View, Text, ActivityIndicator } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
+import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import CalendarListScreen from "./src/screens/CalendarListScreen";
 import CalendarScreen from "./src/screens/CalendarScreen";
 import EventFormScreen from "./src/screens/EventFormScreen";
@@ -80,18 +81,19 @@ function ShiftStack() {
 }
 
 function MainTabs() {
+  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#0D0D0F",
-          borderTopColor: "#1A1A1E",
+          backgroundColor: colors.tabBar,
+          borderTopColor: colors.tabBarBorder,
           paddingBottom: 4,
           height: 56,
         },
-        tabBarActiveTintColor: "#3A50E0",
-        tabBarInactiveTintColor: "#6B7280",
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
       }}
     >
@@ -117,8 +119,8 @@ function MainTabs() {
         options={{
           title: "通知",
           headerShown: true,
-          headerStyle: { backgroundColor: "#0D0D0F" },
-          headerTintColor: "#F3F4F6",
+          headerStyle: { backgroundColor: colors.bg },
+          headerTintColor: colors.text,
           tabBarLabel: "通知",
           tabBarIcon: ({ focused }) => <TabIcon emoji="🔔" focused={focused} />,
         }}
@@ -129,8 +131,8 @@ function MainTabs() {
         options={{
           title: "設定",
           headerShown: true,
-          headerStyle: { backgroundColor: "#0D0D0F" },
-          headerTintColor: "#F3F4F6",
+          headerStyle: { backgroundColor: colors.bg },
+          headerTintColor: colors.text,
           tabBarLabel: "設定",
           tabBarIcon: ({ focused }) => <TabIcon emoji="⚙️" focused={focused} />,
         }}
@@ -141,11 +143,12 @@ function MainTabs() {
 
 function RootNavigator() {
   const { user, initializing } = useAuth();
+  const { colors } = useTheme();
 
   if (initializing || !user) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0D0D0F" }}>
-        <ActivityIndicator size="large" color="#3A50E0" />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg }}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -153,15 +156,22 @@ function RootNavigator() {
   return <MainTabs />;
 }
 
+function StatusBarThemed() {
+  const { colors } = useTheme();
+  return <StatusBar style={colors.statusBar} />;
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
-        <StatusBar style="light" />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+          <StatusBarThemed />
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

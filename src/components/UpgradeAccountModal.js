@@ -11,9 +11,11 @@ import {
 } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function UpgradeAccountModal({ visible, onClose, onSuccess }) {
   const { register, loginWithApple } = useAuth();
+  const { colors } = useTheme();
   const [showEmail, setShowEmail] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -73,10 +75,10 @@ export default function UpgradeAccountModal({ visible, onClose, onSuccess }) {
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.box}>
-          <Text style={styles.title}>アカウント登録</Text>
-          <Text style={styles.desc}>
+      <View style={[styles.overlay, { backgroundColor: colors.modalOverlay }]}>
+        <View style={[styles.box, { backgroundColor: colors.modalBg }]}>
+          <Text style={[styles.title, { color: colors.text }]}>アカウント登録</Text>
+          <Text style={[styles.desc, { color: colors.textSecondary }]}>
             カレンダーを共有するには{"\n"}アカウント登録が必要です
           </Text>
 
@@ -92,27 +94,30 @@ export default function UpgradeAccountModal({ visible, onClose, onSuccess }) {
 
           {!showEmail ? (
             <Pressable onPress={() => setShowEmail(true)}>
-              <Text style={styles.emailLink}>メールアドレスで登録</Text>
+              <Text style={[styles.emailLink, { color: colors.textSecondary }]}>メールアドレスで登録</Text>
             </Pressable>
           ) : (
             <View style={styles.emailForm}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg, color: colors.text }]}
                 placeholder="表示名"
+                placeholderTextColor={colors.textMuted}
                 value={displayName}
                 onChangeText={setDisplayName}
               />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg, color: colors.text }]}
                 placeholder="メールアドレス"
+                placeholderTextColor={colors.textMuted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg, color: colors.text }]}
                 placeholder="パスワード（6文字以上）"
+                placeholderTextColor={colors.textMuted}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -127,10 +132,10 @@ export default function UpgradeAccountModal({ visible, onClose, onSuccess }) {
             </View>
           )}
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
 
           <Pressable style={styles.cancelBtn} onPress={handleClose}>
-            <Text style={styles.cancelText}>あとで</Text>
+            <Text style={[styles.cancelText, { color: colors.textVeryMuted }]}>あとで</Text>
           </Pressable>
         </View>
       </View>
@@ -141,12 +146,10 @@ export default function UpgradeAccountModal({ visible, onClose, onSuccess }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "center",
     paddingHorizontal: 24,
   },
   box: {
-    backgroundColor: "#fff",
     borderRadius: 20,
     padding: 24,
     alignItems: "center",
@@ -154,12 +157,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#1A1D23",
     marginBottom: 6,
   },
   desc: {
     fontSize: 13,
-    color: "#8A8F98",
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
@@ -170,7 +171,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emailLink: {
-    color: "#8A8F98",
     fontSize: 13,
     textDecorationLine: "underline",
     paddingVertical: 8,
@@ -181,13 +181,11 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#E1E4E8",
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
     marginBottom: 10,
-    backgroundColor: "#F8F9FB",
   },
   registerBtn: {
     backgroundColor: "#3A50E0",
@@ -200,7 +198,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   error: {
-    color: "#E4572E",
     fontSize: 12,
     marginTop: 10,
     textAlign: "center",
@@ -210,7 +207,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   cancelText: {
-    color: "#C4C8CE",
     fontSize: 13,
   },
 });

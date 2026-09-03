@@ -12,17 +12,26 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, en
 import { getPresets } from "../services/shiftPresets";
 import { addEvent } from "../services/calendarService";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
 export default function ShiftQuickAddScreen({ route, navigation }) {
   const { calendarId } = route.params;
   const { user } = useAuth();
+  const { colors } = useTheme();
   const [presets, setPresets] = useState([]);
   const [selectedPreset, setSelectedPreset] = useState(null);
   const [selectedDates, setSelectedDates] = useState(new Set());
   const [month, setMonth] = useState(new Date());
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerStyle: { backgroundColor: colors.bg },
+      headerTintColor: colors.text,
+    });
+  }, [navigation, colors]);
 
   useEffect(() => {
     getPresets().then((p) => {
@@ -82,8 +91,8 @@ export default function ShiftQuickAddScreen({ route, navigation }) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.sectionTitle}>シフトパターンを選択</Text>
+    <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} contentContainerStyle={styles.content}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>シフトパターンを選択</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetScroll}>
         {presets.map((p) => (
           <Pressable
@@ -119,17 +128,17 @@ export default function ShiftQuickAddScreen({ route, navigation }) {
         ))}
       </ScrollView>
 
-      <Text style={styles.sectionTitle}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>
         日付を選択（{selectedDates.size}日選択中）
       </Text>
 
       <View style={styles.monthHeader}>
         <Pressable onPress={() => setMonth(subMonths(month, 1))} hitSlop={12}>
-          <Text style={styles.monthNav}>‹</Text>
+          <Text style={[styles.monthNav, { color: colors.accentText }]}>‹</Text>
         </Pressable>
-        <Text style={styles.monthLabel}>{format(month, "yyyy年 M月")}</Text>
+        <Text style={[styles.monthLabel, { color: colors.text }]}>{format(month, "yyyy年 M月")}</Text>
         <Pressable onPress={() => setMonth(addMonths(month, 1))} hitSlop={12}>
-          <Text style={styles.monthNav}>›</Text>
+          <Text style={[styles.monthNav, { color: colors.accentText }]}>›</Text>
         </Pressable>
       </View>
 
@@ -139,8 +148,9 @@ export default function ShiftQuickAddScreen({ route, navigation }) {
             key={label}
             style={[
               styles.weekdayLabel,
-              i === 0 && { color: "#E4572E" },
-              i === 6 && { color: "#3A7CFF" },
+              { color: colors.weekday },
+              i === 0 && { color: colors.sunday },
+              i === 6 && { color: colors.saturday },
             ]}
           >
             {label}
@@ -168,9 +178,10 @@ export default function ShiftQuickAddScreen({ route, navigation }) {
               <Text
                 style={[
                   styles.dayText,
-                  !inMonth && { color: "#D1D5DB" },
+                  { color: colors.dayText },
+                  !inMonth && { color: colors.dayTextMuted },
                   selected && { color: "#fff", fontWeight: "700" },
-                  isToday(day) && !selected && { color: "#3A50E0", fontWeight: "700" },
+                  isToday(day) && !selected && { color: colors.dayToday, fontWeight: "700" },
                 ]}
               >
                 {format(day, "d")}
@@ -198,12 +209,11 @@ export default function ShiftQuickAddScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1 },
   content: { padding: 20, paddingBottom: 60 },
   sectionTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#374151",
     marginBottom: 12,
     marginTop: 8,
   },
@@ -232,14 +242,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 24,
   },
-  monthNav: { fontSize: 24, color: "#3A50E0", paddingHorizontal: 12 },
-  monthLabel: { fontSize: 16, fontWeight: "700", color: "#1A1D23" },
+  monthNav: { fontSize: 24, paddingHorizontal: 12 },
+  monthLabel: { fontSize: 16, fontWeight: "700" },
   weekRow: { flexDirection: "row", marginBottom: 4 },
   weekdayLabel: {
     width: `${100 / 7}%`,
     textAlign: "center",
     fontSize: 12,
-    color: "#8A8F98",
     fontWeight: "600",
   },
   grid: { flexDirection: "row", flexWrap: "wrap", marginBottom: 24 },
@@ -249,7 +258,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  dayText: { fontSize: 15, color: "#1A1D23" },
+  dayText: { fontSize: 15 },
   saveButton: {
     backgroundColor: "#3A50E0",
     borderRadius: 14,

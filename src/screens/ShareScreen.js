@@ -3,14 +3,23 @@ import { View, Text, StyleSheet, Pressable, Share, FlatList } from "react-native
 import { doc, onSnapshot, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import UpgradeAccountModal from "../components/UpgradeAccountModal";
 
 export default function ShareScreen({ route, navigation }) {
   const { calendarId } = route.params;
   const { isGuest } = useAuth();
+  const { colors } = useTheme();
   const [calendarInfo, setCalendarInfo] = useState(null);
   const [members, setMembers] = useState([]);
   const [showUpgrade, setShowUpgrade] = useState(false);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerStyle: { backgroundColor: colors.bg },
+      headerTintColor: colors.text,
+    });
+  }, [navigation, colors]);
 
   useEffect(() => {
     if (isGuest()) {
@@ -48,13 +57,13 @@ export default function ShareScreen({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.calName}>{calendarInfo.name}</Text>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <Text style={[styles.calName, { color: colors.text }]}>{calendarInfo.name}</Text>
 
-      <View style={styles.codeBox}>
-        <Text style={styles.codeLabel}>招待コード</Text>
-        <Text style={styles.code}>{calendarInfo.inviteCode}</Text>
-        <Text style={styles.codeHint}>
+      <View style={[styles.codeBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.codeLabel, { color: colors.textSecondary }]}>招待コード</Text>
+        <Text style={[styles.code, { color: colors.accentText }]}>{calendarInfo.inviteCode}</Text>
+        <Text style={[styles.codeHint, { color: colors.textSecondary }]}>
           このコードを共有すると、相手はアプリから参加できます
         </Text>
         <Pressable style={styles.shareButton} onPress={handleShare}>
@@ -62,21 +71,21 @@ export default function ShareScreen({ route, navigation }) {
         </Pressable>
       </View>
 
-      <Text style={styles.sectionTitle}>メンバー（{members.length}人）</Text>
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>メンバー（{members.length}人）</Text>
       <FlatList
         data={members}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.memberRow}>
-            <View style={styles.memberAvatar}>
-              <Text style={styles.memberAvatarText}>
+          <View style={[styles.memberRow, { borderBottomColor: colors.border }]}>
+            <View style={[styles.memberAvatar, { backgroundColor: colors.accentLight }]}>
+              <Text style={[styles.memberAvatarText, { color: colors.accentText }]}>
                 {(item.displayName || item.email || "?")[0].toUpperCase()}
               </Text>
             </View>
             <View style={styles.memberInfo}>
-              <Text style={styles.memberName}>{item.displayName || item.email}</Text>
+              <Text style={[styles.memberName, { color: colors.text }]}>{item.displayName || item.email}</Text>
               {item.id === calendarInfo.ownerId && (
-                <Text style={styles.ownerBadge}>作成者</Text>
+                <Text style={[styles.ownerBadge, { color: colors.accentText, backgroundColor: colors.accentLight }]}>作成者</Text>
               )}
             </View>
           </View>
@@ -96,26 +105,23 @@ export default function ShareScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFBFC", padding: 20 },
-  calName: { fontSize: 20, fontWeight: "800", color: "#1F2937", marginBottom: 20 },
+  container: { flex: 1, padding: 20 },
+  calName: { fontSize: 20, fontWeight: "800", marginBottom: 20 },
   codeBox: {
-    backgroundColor: "#fff",
     borderRadius: 20,
     padding: 24,
     alignItems: "center",
     marginBottom: 28,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
   },
-  codeLabel: { fontSize: 12, color: "#9CA3AF", fontWeight: "600" },
+  codeLabel: { fontSize: 12, fontWeight: "600" },
   code: {
     fontSize: 36,
     fontWeight: "800",
-    color: "#3A50E0",
     letterSpacing: 6,
     marginVertical: 10,
   },
-  codeHint: { fontSize: 12, color: "#9CA3AF", textAlign: "center", marginBottom: 16 },
+  codeHint: { fontSize: 12, textAlign: "center", marginBottom: 16 },
   shareButton: {
     backgroundColor: "#3A50E0",
     borderRadius: 12,
@@ -123,31 +129,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   shareButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#9CA3AF", marginBottom: 12 },
+  sectionTitle: { fontSize: 13, fontWeight: "700", marginBottom: 12 },
   memberRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
     gap: 12,
   },
   memberAvatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#EEF2FF",
     alignItems: "center",
     justifyContent: "center",
   },
-  memberAvatarText: { color: "#3A50E0", fontWeight: "700", fontSize: 15 },
+  memberAvatarText: { fontWeight: "700", fontSize: 15 },
   memberInfo: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
-  memberName: { fontSize: 15, color: "#1F2937", fontWeight: "500" },
+  memberName: { fontSize: 15, fontWeight: "500" },
   ownerBadge: {
     fontSize: 11,
-    color: "#3A50E0",
     fontWeight: "700",
-    backgroundColor: "#EEF2FF",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,

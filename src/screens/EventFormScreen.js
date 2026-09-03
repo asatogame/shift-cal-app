@@ -9,6 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { addEvent, updateEvent, deleteEvent } from "../services/calendarService";
 import { getPresets } from "../services/shiftPresets";
 
@@ -17,6 +18,7 @@ const COLORS = ["#3A50E0", "#EF4444", "#16A34A", "#8B5CF6", "#F59E0B", "#EC4899"
 export default function EventFormScreen({ route, navigation }) {
   const { calendarId, event, date } = route.params;
   const { user } = useAuth();
+  const { colors } = useTheme();
   const isEdit = !!event;
 
   const [title, setTitle] = useState(event?.title || "");
@@ -26,6 +28,13 @@ export default function EventFormScreen({ route, navigation }) {
   const [color, setColor] = useState(event?.color || COLORS[0]);
   const [saving, setSaving] = useState(false);
   const [presets, setPresets] = useState([]);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerStyle: { backgroundColor: colors.bg },
+      headerTintColor: colors.text,
+    });
+  }, [navigation, colors]);
 
   useEffect(() => {
     if (!isEdit) {
@@ -88,10 +97,10 @@ export default function EventFormScreen({ route, navigation }) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} contentContainerStyle={styles.content}>
       {!isEdit && presets.length > 0 && (
         <>
-          <Text style={styles.label}>クイック入力</Text>
+          <Text style={[styles.label, { color: colors.textMuted }]}>クイック入力</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetRow}>
             {presets.map((p) => (
               <Pressable
@@ -106,46 +115,50 @@ export default function EventFormScreen({ route, navigation }) {
         </>
       )}
 
-      <Text style={styles.label}>タイトル</Text>
+      <Text style={[styles.label, { color: colors.textMuted }]}>タイトル</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg, color: colors.text }]}
         value={title}
         onChangeText={setTitle}
         placeholder="例: 早番、MTG、休み"
+        placeholderTextColor={colors.textMuted}
         autoFocus={isEdit || presets.length === 0}
       />
 
       <View style={styles.row}>
         <View style={styles.half}>
-          <Text style={styles.label}>開始</Text>
+          <Text style={[styles.label, { color: colors.textMuted }]}>開始</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg, color: colors.text }]}
             value={startTime}
             onChangeText={setStartTime}
             placeholder="09:00"
+            placeholderTextColor={colors.textMuted}
           />
         </View>
         <View style={styles.half}>
-          <Text style={styles.label}>終了</Text>
+          <Text style={[styles.label, { color: colors.textMuted }]}>終了</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg, color: colors.text }]}
             value={endTime}
             onChangeText={setEndTime}
             placeholder="18:00"
+            placeholderTextColor={colors.textMuted}
           />
         </View>
       </View>
 
-      <Text style={styles.label}>メモ</Text>
+      <Text style={[styles.label, { color: colors.textMuted }]}>メモ</Text>
       <TextInput
-        style={[styles.input, styles.textArea]}
+        style={[styles.input, styles.textArea, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg, color: colors.text }]}
         value={memo}
         onChangeText={setMemo}
         placeholder="任意のメモ"
+        placeholderTextColor={colors.textMuted}
         multiline
       />
 
-      <Text style={styles.label}>カラー</Text>
+      <Text style={[styles.label, { color: colors.textMuted }]}>カラー</Text>
       <View style={styles.colorRow}>
         {COLORS.map((c) => (
           <Pressable
@@ -154,7 +167,7 @@ export default function EventFormScreen({ route, navigation }) {
             style={[
               styles.colorDot,
               { backgroundColor: c },
-              color === c && styles.colorDotSelected,
+              color === c && { borderWidth: 3, borderColor: colors.text },
             ]}
           />
         ))}
@@ -166,7 +179,7 @@ export default function EventFormScreen({ route, navigation }) {
 
       {isEdit && (
         <Pressable style={styles.deleteButton} onPress={handleDelete}>
-          <Text style={styles.deleteButtonText}>この予定を削除</Text>
+          <Text style={[styles.deleteButtonText, { color: colors.error }]}>この予定を削除</Text>
         </Pressable>
       )}
     </ScrollView>
@@ -174,18 +187,15 @@ export default function EventFormScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1 },
   content: { padding: 20, paddingBottom: 60 },
-  label: { fontSize: 12, color: "#9CA3AF", marginBottom: 6, marginTop: 16, fontWeight: "600" },
+  label: { fontSize: 12, marginBottom: 6, marginTop: 16, fontWeight: "600" },
   input: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 13,
     fontSize: 15,
-    backgroundColor: "#F9FAFB",
-    color: "#1F2937",
   },
   textArea: { minHeight: 80, textAlignVertical: "top" },
   row: { flexDirection: "row", gap: 12 },
@@ -201,7 +211,6 @@ const styles = StyleSheet.create({
   presetChipText: { fontSize: 14, fontWeight: "700" },
   colorRow: { flexDirection: "row", gap: 12 },
   colorDot: { width: 34, height: 34, borderRadius: 17 },
-  colorDotSelected: { borderWidth: 3, borderColor: "#1F2937" },
   saveButton: {
     backgroundColor: "#3A50E0",
     borderRadius: 14,
@@ -211,5 +220,5 @@ const styles = StyleSheet.create({
   },
   saveButtonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   deleteButton: { alignItems: "center", marginTop: 20 },
-  deleteButtonText: { color: "#EF4444", fontSize: 14 },
+  deleteButtonText: { fontSize: 14 },
 });
