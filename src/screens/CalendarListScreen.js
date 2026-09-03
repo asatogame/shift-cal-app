@@ -86,20 +86,11 @@ export default function CalendarListScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>マイカレンダー</Text>
-        <View style={styles.headerRight}>
-          {isGuest() && (
-            <Pressable style={styles.registerBtn} onPress={() => setShowUpgrade(true)}>
-              <Text style={styles.registerBtnText}>アカウント登録</Text>
-            </Pressable>
-          )}
-          <Pressable
-            style={styles.settingsBtn}
-            onPress={() => navigation.navigate("Settings")}
-            hitSlop={8}
-          >
-            <Text style={styles.settingsIcon}>⚙️</Text>
+        {isGuest() && (
+          <Pressable style={styles.registerBtn} onPress={() => setShowUpgrade(true)}>
+            <Text style={styles.registerBtnText}>アカウント登録</Text>
           </Pressable>
-        </View>
+        )}
       </View>
 
       <FlatList
@@ -212,9 +203,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   registerBtnText: { color: "#3A50E0", fontSize: 13, fontWeight: "600" },
-  headerRight: { flexDirection: "row", alignItems: "center", gap: 10 },
-  settingsBtn: { padding: 4 },
-  settingsIcon: { fontSize: 20 },
   list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16 },
   emptyBox: {
     alignItems: "center",
