@@ -2,7 +2,7 @@
   "expo": {
     "name": "シフトカレンダー共有",
     "slug": "shift-cal-app",
-    "version": "1.0.0",
+    "version": "1.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,8 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "予定表を撮影してカレンダーに自動登録するためにカメラを使用します。",
         "NSPhotoLibraryUsageDescription": "予定表の画像を選択してカレンダーに自動登録するために写真ライブラリを使用します。"
-      }
+      },
+      "buildNumber": "2"
     },
     "android": {
       "package": "jp.jackcentral.shiftcal",
