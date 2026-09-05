@@ -46,7 +46,25 @@ export default function ShiftTabScreen({ navigation }) {
       icon: "🎨",
       title: "シフトパターン管理",
       desc: "パターンの追加・編集・並べ替え",
-      onPress: () => {},
+      onPress: () => {
+        navigation.navigate("ShiftPatterns", { calendarId: selectedCalendarId });
+      },
+    },
+    {
+      icon: "📊",
+      title: "シフト統計",
+      desc: "月ごとの出勤日数・勤務時間を集計",
+      onPress: () => {
+        navigation.navigate("ShiftStats");
+      },
+    },
+    {
+      icon: "🔄",
+      title: "シフト交換",
+      desc: "メンバーとシフトの交換をリクエスト",
+      onPress: () => {
+        navigation.navigate("ShiftSwap");
+      },
     },
   ];
 

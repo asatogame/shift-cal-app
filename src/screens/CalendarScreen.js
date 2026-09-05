@@ -9,24 +9,44 @@ import {
 } from "react-native";
 import { format, addMonths, subMonths } from "date-fns";
 import MonthGrid from "../components/MonthGrid";
-import { subscribeEvents, deleteEvent, getCalendar } from "../services/calendarService";
+import { subscribeEvents, deleteEvent, getCalendar, subscribeMyCalendars } from "../services/calendarService";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
 export default function CalendarScreen({ route, navigation }) {
-  const { calendarId } = route.params;
+  const paramCalendarId = route?.params?.calendarId;
   const { user } = useAuth();
   const { colors } = useTheme();
+  const [calendarId, setCalendarId] = useState(paramCalendarId || null);
   const [calendarInfo, setCalendarInfo] = useState(null);
   const [month, setMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [events, setEvents] = useState([]);
 
+  // カレンダータブから直接開いた場合、最初のカレンダーを自動選択
   useEffect(() => {
+    if (paramCalendarId || calendarId) return;
+    if (!user) return;
+    const unsub = subscribeMyCalendars(user.uid, (list) => {
+      if (list.length > 0 && !calendarId) {
+        setCalendarId(list[0].id);
+      }
+    });
+    return unsub;
+  }, [user, paramCalendarId]);
+
+  // paramsが変わったら更新
+  useEffect(() => {
+    if (paramCalendarId) setCalendarId(paramCalendarId);
+  }, [paramCalendarId]);
+
+  useEffect(() => {
+    if (!calendarId) return;
     getCalendar(calendarId).then(setCalendarInfo);
   }, [calendarId]);
 
   useEffect(() => {
+    if (!calendarId) return;
     const unsub = subscribeEvents(calendarId, setEvents);
     return unsub;
   }, [calendarId]);
@@ -68,6 +88,16 @@ export default function CalendarScreen({ route, navigation }) {
   const handleDeleteEvent = (eventId) => {
     deleteEvent(calendarId, eventId);
   };
+
+  if (!calendarId) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg, justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+          カレンダーがありません。「一覧」タブから作成してください。
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>

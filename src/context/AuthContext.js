@@ -98,7 +98,16 @@ export function AuthProvider({ children }) {
 
     let result;
     if (user?.isAnonymous) {
-      result = await linkWithCredential(user, oauthCredential);
+      try {
+        result = await linkWithCredential(user, oauthCredential);
+      } catch (linkError) {
+        // リンク失敗時（既に別アカウントで使用中など）は通常サインインにフォールバック
+        if (linkError.code === "auth/credential-already-in-use") {
+          result = await signInWithCredential(auth, oauthCredential);
+        } else {
+          throw linkError;
+        }
+      }
     } else {
       result = await signInWithCredential(auth, oauthCredential);
     }

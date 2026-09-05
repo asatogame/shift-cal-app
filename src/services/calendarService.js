@@ -19,6 +19,29 @@
 //   color         : 表示色（任意）
 //   createdBy     : uid
 //   createdAt
+//
+// calendars/{calendarId}/memos/{memoId}
+//   date          : "YYYY-MM-DD"
+//   text          : メモ/引き継ぎ内容
+//   createdBy     : uid
+//   createdByName : 投稿者名
+//   createdAt
+//
+// calendars/{calendarId}/swapRequests/{requestId}
+//   fromUid       : リクエスト元のuid
+//   toUid         : リクエスト先のuid
+//   fromEventId   : 交換元の予定ID
+//   toEventId     : 交換先の予定ID（任意）
+//   fromDate      : "YYYY-MM-DD"（元の日付）
+//   toDate        : "YYYY-MM-DD"（交換希望日付）
+//   fromTitle     : 元の予定タイトル
+//   toTitle       : 交換先の予定タイトル（任意）
+//   status        : "pending" | "accepted" | "rejected"
+//   message       : メッセージ（任意）
+//   fromName      : リクエスト元の名前
+//   toName        : リクエスト先の名前
+//   calendarName  : カレンダー名
+//   createdAt
 
 import {
   collection,
@@ -125,4 +148,129 @@ export async function deleteEvent(calendarId, eventId) {
 export async function getCalendar(calendarId) {
   const snap = await getDoc(doc(db, "calendars", calendarId));
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+// カレンダーの色を更新
+export async function updateCalendarColor(calendarId, color) {
+  await updateDoc(doc(db, "calendars", calendarId), { color });
+}
+
+// カレンダー名を更新
+export async function updateCalendarName(calendarId, name) {
+  await updateDoc(doc(db, "calendars", calendarId), { name });
+}
+
+// デフォルトカレンダーIDをユーザードキュメントに保存
+export async function setDefaultCalendar(uid, calendarId) {
+  const { setDoc: firestoreSetDoc } = await import("firebase/firestore");
+  await firestoreSetDoc(doc(db, "users", uid), { defaultCalendarId: calendarId }, { merge: true });
+}
+
+// ユーザーのデフォルトカレンダーIDを取得
+export async function getDefaultCalendar(uid) {
+  const snap = await getDoc(doc(db, "users", uid));
+  return snap.exists() ? snap.data().defaultCalendarId || null : null;
+}
+
+// メンバー情報を取得（uid配列からユーザー名を引く）
+export async function getMembers(memberIds) {
+  const members = [];
+  for (const uid of memberIds) {
+    const snap = await getDoc(doc(db, "users", uid));
+    if (snap.exists()) {
+      members.push({ uid, ...snap.data() });
+    } else {
+      members.push({ uid, displayName: "不明", email: "" });
+    }
+  }
+  return members;
+}
+
+// カレンダーから退出
+export async function leaveCalendar(calendarId, uid) {
+  const { arrayRemove } = await import("firebase/firestore");
+  await updateDoc(doc(db, "calendars", calendarId), {
+    memberIds: arrayRemove(uid),
+  });
+}
+
+// カレンダーを削除（オーナーのみ）
+export async function deleteCalendar(calendarId) {
+  const { deleteDoc: firestoreDeleteDoc } = await import("firebase/firestore");
+  await firestoreDeleteDoc(doc(db, "calendars", calendarId));
+}
+
+// ============================================================
+// 日別メモ / 引き継ぎ
+// ============================================================
+
+// 日別メモをリアルタイム購読
+export function subscribeMemos(calendarId, callback) {
+  const q = collection(db, "calendars", calendarId, "memos");
+  return onSnapshot(q, (snap) => {
+    const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    callback(list);
+  });
+}
+
+// 日別メモを追加
+export async function addMemo(calendarId, { date, text, createdBy, createdByName }) {
+  const ref = await addDoc(collection(db, "calendars", calendarId, "memos"), {
+    date,
+    text,
+    createdBy,
+    createdByName: createdByName || "",
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+// 日別メモを削除
+export async function deleteMemo(calendarId, memoId) {
+  await deleteDoc(doc(db, "calendars", calendarId, "memos", memoId));
+}
+
+// ============================================================
+// シフト交換リクエスト
+// ============================================================
+
+// 交換リクエストをリアルタイム購読（カレンダー単位）
+export function subscribeSwapRequests(calendarId, callback) {
+  const q = collection(db, "calendars", calendarId, "swapRequests");
+  return onSnapshot(q, (snap) => {
+    const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    callback(list);
+  });
+}
+
+// 交換リクエストを送信
+export async function createSwapRequest(calendarId, request) {
+  const ref = await addDoc(collection(db, "calendars", calendarId, "swapRequests"), {
+    ...request,
+    status: "pending",
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+// 交換リクエストのステータスを更新
+export async function updateSwapRequest(calendarId, requestId, status) {
+  await updateDoc(doc(db, "calendars", calendarId, "swapRequests", requestId), { status });
+}
+
+// 交換リクエストに応じて予定を実際にスワップする
+export async function executeSwap(calendarId, request) {
+  // fromのイベントのcreatedByをtoUidに、toのイベントのcreatedByをfromUidに変更
+  if (request.fromEventId) {
+    await updateDoc(doc(db, "calendars", calendarId, "events", request.fromEventId), {
+      createdBy: request.toUid,
+    });
+  }
+  if (request.toEventId) {
+    await updateDoc(doc(db, "calendars", calendarId, "events", request.toEventId), {
+      createdBy: request.fromUid,
+    });
+  }
+  // ステータスを承認済みに
+  await updateSwapRequest(calendarId, request.id, "accepted");
 }

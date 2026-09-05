@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,15 @@ import {
   Alert,
   Linking,
   ScrollView,
+  Switch,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { app } from "../firebase";
+import { subscribeMyCalendars, subscribeEvents } from "../services/calendarService";
+import { requestNotificationPermission, scheduleShiftReminders } from "../services/notificationService";
 import UpgradeAccountModal from "../components/UpgradeAccountModal";
 
 const THEME_OPTIONS = [
@@ -24,6 +28,47 @@ export default function SettingsScreen({ navigation }) {
   const { user, isGuest, logout } = useAuth();
   const { colors, mode, setThemeMode } = useTheme();
   const [showUpgrade, setShowUpgrade] = React.useState(false);
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+
+  // リマインダー設定を読み込み
+  useEffect(() => {
+    AsyncStorage.getItem("shiftReminder").then((v) => {
+      if (v === "true") setReminderEnabled(true);
+    });
+  }, []);
+
+  // リマインダーON/OFF切り替え
+  const toggleReminder = async (value) => {
+    if (value) {
+      const granted = await requestNotificationPermission();
+      if (!granted) {
+        Alert.alert("通知が許可されていません", "設定アプリから通知を許可してください");
+        return;
+      }
+    }
+    setReminderEnabled(value);
+    await AsyncStorage.setItem("shiftReminder", value ? "true" : "false");
+
+    if (value && user) {
+      // 全カレンダーの予定を取得してリマインダー登録
+      subscribeMyCalendars(user.uid, (calendars) => {
+        const allEvents = [];
+        let loaded = 0;
+        if (calendars.length === 0) return;
+        calendars.forEach((cal) => {
+          subscribeEvents(cal.id, (events) => {
+            allEvents.push(...events.map((e) => ({ ...e, calendarName: cal.name })));
+            loaded++;
+            if (loaded === calendars.length) {
+              scheduleShiftReminders(allEvents).then((count) => {
+                Alert.alert("リマインダー設定完了", `${count}件の通知をスケジュールしました`);
+              });
+            }
+          });
+        });
+      });
+    }
+  };
 
   const displayName = user?.displayName || (isGuest() ? "ゲスト" : user?.email || "");
 
@@ -63,7 +108,16 @@ export default function SettingsScreen({ navigation }) {
         </>
       )}
 
-      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>外観</Text>
+      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>プラン</Text>
+      <Pressable
+        style={[styles.premiumBtn]}
+        onPress={() => navigation.navigate("PremiumPlan")}
+      >
+        <Text style={styles.premiumBtnTitle}>✨ プレミアムプランに登録</Text>
+        <Text style={styles.premiumBtnDesc}>広告非表示 + AI解析 月10回 — ¥300/月</Text>
+      </Pressable>
+
+      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>テーマ</Text>
       <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         {THEME_OPTIONS.map((opt, i) => (
           <Pressable
@@ -75,6 +129,23 @@ export default function SettingsScreen({ navigation }) {
             {mode === opt.key && <Text style={{ color: colors.accent, fontSize: 16, fontWeight: "700" }}>✓</Text>}
           </Pressable>
         ))}
+      </View>
+
+      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>通知</Text>
+      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={[styles.row]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.rowText, { color: colors.text }]}>前日リマインダー</Text>
+            <Text style={[{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }]}>
+              前日20:00に翌日のシフトを通知
+            </Text>
+          </View>
+          <Switch
+            value={reminderEnabled}
+            onValueChange={toggleReminder}
+            trackColor={{ true: colors.accent }}
+          />
+        </View>
       </View>
 
       <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>サポート</Text>
@@ -90,6 +161,22 @@ export default function SettingsScreen({ navigation }) {
         >
           <Text style={[styles.rowText, { color: colors.text }]}>お問い合わせ</Text>
           <Text style={[styles.rowSub, { color: colors.textSecondary }]}>メールで連絡</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.row, styles.rowBorder, { borderBottomColor: colors.border }]}
+          onPress={() =>
+            Linking.openURL(
+              "mailto:info@jack-central.com?subject=" +
+                encodeURIComponent("【シフトカレンダー共有】機能リクエスト") +
+                "&body=" +
+                encodeURIComponent(
+                  "■ ほしい機能\n\n\n■ 理由・使い方\n\n"
+                )
+            )
+          }
+        >
+          <Text style={[styles.rowText, { color: colors.text }]}>機能リクエスト</Text>
+          <Text style={[styles.rowSub, { color: colors.textSecondary }]}>ご要望・アイデア</Text>
         </Pressable>
         <Pressable
           style={styles.row}
@@ -135,55 +222,59 @@ export default function SettingsScreen({ navigation }) {
         </Pressable>
       </View>
 
-      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>アカウント</Text>
-      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Pressable
-          style={[styles.row, styles.rowBorder, { borderBottomColor: colors.border }]}
-          onPress={() => {
-            Alert.alert("ログアウト", "ログアウトしますか？", [
-              { text: "キャンセル", style: "cancel" },
-              { text: "ログアウト", style: "destructive", onPress: logout },
-            ]);
-          }}
-        >
-          <Text style={[styles.rowText, { color: colors.error }]}>ログアウト</Text>
-        </Pressable>
-        <Pressable
-          style={styles.row}
-          onPress={() => {
-            Alert.alert(
-              "アカウントを削除",
-              "すべてのデータが完全に削除されます。この操作は取り消せません。本当に削除しますか？",
-              [
-                { text: "キャンセル", style: "cancel" },
-                {
-                  text: "削除する",
-                  style: "destructive",
-                  onPress: async () => {
-                    try {
-                      const functions = getFunctions(app, "asia-northeast1");
-                      const deleteAccount = httpsCallable(
-                        functions,
-                        "deleteAccount"
-                      );
-                      await deleteAccount();
-                      Alert.alert("削除完了", "アカウントが削除されました。");
-                    } catch (e) {
-                      Alert.alert("エラー", "アカウントの削除に失敗しました。");
-                    }
-                  },
-                },
-              ]
-            );
-          }}
-        >
-          <Text style={[styles.rowText, { color: colors.error }]}>
-            アカウントを削除
-          </Text>
-        </Pressable>
-      </View>
+      {!isGuest() && (
+        <>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>アカウント</Text>
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Pressable
+              style={[styles.row, styles.rowBorder, { borderBottomColor: colors.border }]}
+              onPress={() => {
+                Alert.alert("ログアウト", "ログアウトしますか？", [
+                  { text: "キャンセル", style: "cancel" },
+                  { text: "ログアウト", style: "destructive", onPress: logout },
+                ]);
+              }}
+            >
+              <Text style={[styles.rowText, { color: colors.error }]}>ログアウト</Text>
+            </Pressable>
+            <Pressable
+              style={styles.row}
+              onPress={() => {
+                Alert.alert(
+                  "アカウントを削除",
+                  "すべてのデータが完全に削除されます。この操作は取り消せません。本当に削除しますか？",
+                  [
+                    { text: "キャンセル", style: "cancel" },
+                    {
+                      text: "削除する",
+                      style: "destructive",
+                      onPress: async () => {
+                        try {
+                          const functions = getFunctions(app, "asia-northeast1");
+                          const deleteAccount = httpsCallable(
+                            functions,
+                            "deleteAccount"
+                          );
+                          await deleteAccount();
+                          Alert.alert("削除完了", "アカウントが削除されました。");
+                        } catch (e) {
+                          Alert.alert("エラー", "アカウントの削除に失敗しました。");
+                        }
+                      },
+                    },
+                  ]
+                );
+              }}
+            >
+              <Text style={[styles.rowText, { color: colors.error }]}>
+                アカウントを削除
+              </Text>
+            </Pressable>
+          </View>
+        </>
+      )}
 
-      <Text style={[styles.version, { color: colors.textVeryMuted }]}>シフトカレンダー共有 v1.0.0</Text>
+      <Text style={[styles.version, { color: colors.textVeryMuted }]}>シフトカレンダー共有 v1.5.0</Text>
 
       <UpgradeAccountModal
         visible={showUpgrade}
@@ -248,6 +339,23 @@ const styles = StyleSheet.create({
     marginTop: -16,
     marginBottom: 24,
     marginLeft: 4,
+  },
+  premiumBtn: {
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 24,
+    alignItems: "center",
+    backgroundColor: "#3A50E0",
+  },
+  premiumBtnTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  premiumBtnDesc: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 12,
   },
   version: {
     textAlign: "center",

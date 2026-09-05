@@ -26,6 +26,18 @@ service cloud.firestore {
       match /events/{eventId} {
         allow read, write: if isMember(calendarId);
       }
+
+      match /memos/{memoId} {
+        allow read: if isMember(calendarId);
+        allow create: if isMember(calendarId);
+        allow delete: if isMember(calendarId) && request.auth.uid == resource.data.createdBy;
+      }
+
+      match /swapRequests/{requestId} {
+        allow read: if isMember(calendarId);
+        allow create: if isMember(calendarId);
+        allow update: if isMember(calendarId);
+      }
     }
   }
 }

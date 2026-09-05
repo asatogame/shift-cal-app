@@ -50,7 +50,6 @@ export default function MonthGrid({ month, selectedDate, onSelectDate, eventDate
           const today = isToday(day);
           const dayOfWeek = getDay(day);
           const dayEvents = eventsByDate ? eventsByDate[key] || [] : [];
-          const eventColors = [...new Set(dayEvents.map((e) => e.color || "#3A50E0"))].slice(0, 3);
 
           return (
             <Pressable
@@ -77,10 +76,17 @@ export default function MonthGrid({ month, selectedDate, onSelectDate, eventDate
                   {format(day, "d")}
                 </Text>
               </View>
-              <View style={styles.dotRow}>
-                {eventColors.map((c, i) => (
-                  <View key={i} style={[styles.dot, { backgroundColor: c }]} />
+              <View style={styles.labelRow}>
+                {dayEvents.slice(0, 2).map((ev, i) => (
+                  <View key={i} style={[styles.eventLabel, { backgroundColor: ev.color || "#3A50E0" }]}>
+                    <Text style={styles.eventLabelText} numberOfLines={1}>
+                      {ev.title ? ev.title.slice(0, 3) : ""}
+                    </Text>
+                  </View>
                 ))}
+                {dayEvents.length > 2 && (
+                  <Text style={[styles.moreText, { color: colors.textMuted }]}>+{dayEvents.length - 2}</Text>
+                )}
               </View>
             </Pressable>
           );
@@ -112,7 +118,7 @@ const styles = StyleSheet.create({
   },
   cell: {
     width: `${100 / 7}%`,
-    height: 48,
+    height: 64,
     alignItems: "center",
     justifyContent: "flex-start",
     paddingTop: 2,
@@ -139,15 +145,27 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
   },
-  dotRow: {
-    flexDirection: "row",
-    height: 6,
-    gap: 2,
+  labelRow: {
+    width: "100%",
+    alignItems: "center",
+    gap: 1,
     marginTop: 1,
   },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+  eventLabel: {
+    borderRadius: 3,
+    paddingHorizontal: 2,
+    paddingVertical: 0,
+    width: "90%",
+    alignItems: "center",
+  },
+  eventLabelText: {
+    color: "#fff",
+    fontSize: 8,
+    fontWeight: "700",
+    lineHeight: 12,
+  },
+  moreText: {
+    fontSize: 7,
+    fontWeight: "600",
   },
 });
